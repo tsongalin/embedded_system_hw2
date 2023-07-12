@@ -28,21 +28,20 @@ include sources.mk
 PLATFORM = 
 
 # Architectures Specific Flags
+# Flags shared by HOST and MSP432
 TARGET = c1m2
+DEP = -MD
 
+# if statement to customize HOST/MSP432 options
 ifeq ($(PLATFORM),HOST)
-CPU = 
-ARCH = 
-SPECS = 
-LINKER_FILE = 
 CC = gcc
 D = HOST
 I = -I$(INCLUDES)
-else ifeq ($(PLATFORM),arm-none-eabi-gcc)
+else ifeq ($(PLATFORM),MSP432)
 CPU = -mcpu=cortex-m4
 ARCH = -mthumb -march=armv7e-m -mfloat-abi=hard -mfpu=fpv4-sp-d16
 SPECS = --specs=nosys.specs
-LINKER_FILE = -T msp432p401r.lds
+LINKER_FILE = -T ../msp432p401r.lds
 CC = arm-none-eabi-gcc
 D = MSP432
 I1 = $(INCLUDES1)
@@ -50,23 +49,28 @@ I2 = $(INCLUDES2)
 I = -I$(INCLUDES) -I$(I1) -I$(I2)
 endif
 
-###
+### Generate list of different object files
+# pre-processes
 OBJS1 = $(SOURCES:.c=.i)
+# compiler
 OBJS2 = $(SOURCES:.c=.asm)
+# Dependency files used in clean process 
+OBJS3 = $(SOURCES:.c=.d)
+# assembler
 OBJS = $(SOURCES:.c=.o)
 
 %.i : %.c
-	$(CC) -E $< $(CFLAGS) -D$(D) $(I) $(CPU) $(ARCH) $(SPECS) -o $@
+	$(CC) -E $< $(CFLAGS) -D$(D) $(I) $(CPU) $(DEP) $(ARCH) $(SPECS) -o $@
 
 %.asm : %.c
-	$(CC) -S $< $(CFLAGS) -D$(D) $(I) $(CPU) $(ARCH) $(SPECS) -o $@
+	$(CC) -S $< $(CFLAGS) -D$(D) $(I) $(CPU) $(DEP) $(ARCH) $(SPECS) -o $@
 
 %.o : %.c
-	$(CC) -c $< $(CFLAGS) -D$(D) $(I) $(CPU) $(ARCH) $(SPECS) -o $@
+	$(CC) -c $< $(CFLAGS) -D$(D) $(I) $(CPU) $(DEP) $(ARCH) $(SPECS) -o $@
 # Compiler Flags and Defines
 
-LD = 
-LDFLAGS = 
+LD = arm-none-eabi-ld
+LDFLAGS = -Wl,-Map=$(TARGET).map
 CFLAGS = -Wall -Werror -g -O0 -std=c99
 CPPFLAGs = 
 #CC = gcc
@@ -75,14 +79,14 @@ CPPFLAGs =
 compile-all: $(OBJS)
 
 %.o : %.c
-	$(CC) -c $< $(CFLAGS) -D$(D) $(I) $(CPU) $(ARCH) $(SPECS) -o $@
+	$(CC) -c $< $(CFLAGS) -D$(D) $(I) $(CPU) $(DEP) $(ARCH) $(SPECS) -o $@
 
 .PHONY: build
 build: $(TARGET).out
 
 $(TARGET).out: $(OBJS)
-	$(CC) $(OBJS) $(CFLAGS) $(LDFLAGS) -o $@
+	$(CC) $(OBJS) $(CFLAGS) -D$(D) $(I) $(CPU) $(DEP) $(ARCH) $(SPECS) $(LDFLAGS) $(LINKER_FILE) $(LDFLAGS) -o $@
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJS) $(OBJS1) $(OBJS2) $(TARGET).out $(TARGET).map
+	rm -rf $(OBJS) $(OBJS1) $(OBJS2) $(OBJS3) $(TARGET).out $(TARGET).map
