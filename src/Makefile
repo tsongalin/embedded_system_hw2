@@ -37,6 +37,7 @@ ifeq ($(PLATFORM),HOST)
 CC = gcc
 D = HOST
 I = -I$(INCLUDES)
+SIZE = size
 else ifeq ($(PLATFORM),MSP432)
 CPU = -mcpu=cortex-m4
 ARCH = -mthumb -march=armv7e-m -mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -47,6 +48,7 @@ D = MSP432
 I1 = $(INCLUDES1)
 I2 = $(INCLUDES2)
 I = -I$(INCLUDES) -I$(I1) -I$(I2)
+SIZE = arm-none-eabi-size
 endif
 
 ### Generate list of different object files
@@ -86,6 +88,7 @@ build: $(TARGET).out
 
 $(TARGET).out: $(OBJS)
 	$(CC) $(OBJS) $(CFLAGS) -D$(D) $(I) $(CPU) $(DEP) $(ARCH) $(SPECS) $(LDFLAGS) $(LINKER_FILE) $(LDFLAGS) -o $@
+	$(SIZE) $@
 
 .PHONY: clean
 clean:
